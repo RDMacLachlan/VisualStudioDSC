@@ -120,6 +120,29 @@ function Get-VsComponents
 
 <#
 .SYNOPSIS
+    Adds extension pack to the locally installed visual studio code.
+
+.PARAMETER ExtensionPacks
+    Collection of Extension Pack identifiers you wish to update the provided instance with.
+
+#>
+function Add-VsCodeComponents
+{
+    param
+    (
+        [Parameter(Mandatory)]
+        [string]$ExtensionPacks
+    )
+
+    foreach($ExtensionPack in $ExtensionPacks) {
+        $installerArgs += " --install-extension $ExtensionPack"
+    }
+    
+    Invoke-VsCode -Arguments $installerArgs
+}
+
+<#
+.SYNOPSIS
     Adds components and workloads identified by the provided component list & Installation Configuration (VSConfig) file into the specified instance
 
 .PARAMETER ProductId
@@ -213,6 +236,40 @@ function Add-VsComponents
 
 <#
 .SYNOPSIS
+    Invokes Visual Studio Code, if it exists, with the provided arguments.
+
+.DESCRIPTION
+    Invokes Visual Studio Code with the provided arguments.
+    If this script is not run as an administrator, without the installer present, or with the installer process running, this script will fail.
+    The invocation is considered successful if return codes of 0 (success), 3010 (reboot required) or 862968 (reboot recommended) are returned.
+
+.PARAMETER Arguments
+    Arguments to pass onwards to Visual Studio Installer.
+
+#>
+function Invoke-VsCode
+{
+    param
+    (
+        [Parameter(Mandatory)]
+        [string]$Arguments
+    )
+
+    Assert-IsAdministrator
+    Assert-VSCodePresent
+    
+    $Installer = Start-Process -FilePath (Get-VsCodePath) -Arguments $Arguments -PassThru
+    $Installer.WaitForExit
+
+    $validErrorCodes = 0,3010,862968;
+    if($installer.ExitCode -NotIn $validErrorCodes)
+    {
+        throw "Visual Studio Code failed with error code $($installer.ExitCode) using arguments: $Arguments"
+    }
+}
+
+<#
+.SYNOPSIS
     Invokes Visual Studio Installer, if it exists, with the provided arguments.
 
 .DESCRIPTION
@@ -299,6 +356,24 @@ function Get-VsInstallerPath
 
 <#
 .SYNOPSIS
+    Returns the default path of Visual Studio Code "Code".
+#>
+function Get-VsCodePath
+{
+    $VSCodePathUser        = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin\code"
+    $VSCodePathxSystem     = "$env:ProgramFiles\Microsoft VS Code\bin\code"
+    $VSCodePathxSystemx86  = "${env:ProgramFiles(x86)}\Microsoft VS Code\bin\code"
+
+    $VSCodePaths = @($VSCodePathUser,$VSCodePathxSystem,$VSCodePathxSystemx86)
+    foreach($VSCodePath in $VSCodePaths){
+        if(Test-Path -Path $VSCodePath) {
+            return $VSCodePath
+        }
+    }
+}
+
+<#
+.SYNOPSIS
     Returns the default path of Visual Studio Locator (vswhere.exe).
 #>
 function Get-VsWherePath
@@ -332,6 +407,21 @@ function Assert-VsWherePresent
 
 <#
 .SYNOPSIS
+    Throws an exception if Visual Studio Code is not present in the default location.
+#>
+function Assert-VSCodePresent
+{
+    $VSCodePathUser     = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\code.exe"
+    $VSCodePathxSystem  = "$env:ProgramFiles\Microsoft VS Code\Code.exe"
+
+    if(-not $VSCodePathUser -and -not $VSCodePathSystem)
+    {
+        throw "Visual Studio Code is not found."
+    }
+}
+
+<#
+.SYNOPSIS
     Throws an exception if Visual Studio Installer is currently running.
 #>
 function Assert-VsInstallerProcessNotRunning
@@ -339,5 +429,17 @@ function Assert-VsInstallerProcessNotRunning
     if (Get-Process | Where-Object { $_.Path -eq (Get-VsInstallerPath) })
     {
         throw "Visual Studio Installer is running. Close the installer and try again."
+    }
+}
+
+<#
+.SYNOPSIS
+    Throws an exception if Visual Studio Code is currently running.
+#>
+function Assert-VsCodeProcessNotRunning
+{
+    if (Get-Process | Where-Object { $_.Path -eq (Get-VsCodePath) })
+    {
+        throw "Visual Studio Code is running. Close and try again."
     }
 }
