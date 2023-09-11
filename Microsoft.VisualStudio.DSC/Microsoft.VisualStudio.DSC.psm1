@@ -360,11 +360,11 @@ function Get-VsInstallerPath
 #>
 function Get-VsCodePath
 {
-    $VSCodePathUser        = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin\code"
-    $VSCodePathxSystem     = "$env:ProgramFiles\Microsoft VS Code\bin\code"
-    $VSCodePathxSystemx86  = "${env:ProgramFiles(x86)}\Microsoft VS Code\bin\code"
+    $VSCodePathUser      = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin\code"
+    $VSCodePathSystem    = "$env:ProgramFiles\Microsoft VS Code\bin\code"
+    $VSCodePathSystemx86 = "${env:ProgramFiles(x86)}\Microsoft VS Code\bin\code"
 
-    $VSCodePaths = @($VSCodePathUser,$VSCodePathxSystem,$VSCodePathxSystemx86)
+    $VSCodePaths = @($VSCodePathUser,$VSCodePathSystem,$VSCodePathSystemx86)
     foreach($VSCodePath in $VSCodePaths){
         if(Test-Path -Path $VSCodePath) {
             return $VSCodePath
@@ -411,10 +411,11 @@ function Assert-VsWherePresent
 #>
 function Assert-VSCodePresent
 {
-    $VSCodePathUser     = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\code.exe"
-    $VSCodePathxSystem  = "$env:ProgramFiles\Microsoft VS Code\Code.exe"
+    $VSCodePathUser      = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\code.exe"
+    $VSCodePathSystem    = "$env:ProgramFiles\Microsoft VS Code\Code.exe"
+    $VSCodePathSystemx86 = "${env:ProgramFiles(x86)}\Microsoft VS Code\Code.exe"
 
-    if(-not $VSCodePathUser -and -not $VSCodePathSystem)
+    if(-not $VSCodePathUser -and -not $VSCodePathSystem -and -not $VSCodePathSystemx86)
     {
         throw "Visual Studio Code is not found."
     }
